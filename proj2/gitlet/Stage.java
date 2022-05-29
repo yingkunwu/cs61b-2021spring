@@ -28,7 +28,8 @@ public class Stage implements Serializable {
     public void addAddition(String filename, String blobUID) {
         // if blob with same filename exists, delete it
         if (addition.containsKey(filename)) {
-            deleteFile(addition.get(filename));
+            String UID = addition.get(filename);
+            Utils.deleteFile(join(Repository.OBJECT_DIR, UID));
         }
         addition.put(filename, blobUID);
     }
@@ -39,16 +40,8 @@ public class Stage implements Serializable {
     }
 
     public void removeAddition(String filename) {
-        deleteFile(addition.get(filename));
+        String UID = addition.get(filename);
+        Utils.deleteFile(join(Repository.OBJECT_DIR, UID));
         addition.remove(filename);
-    }
-
-    public void deleteFile(String filename) {
-        File file = join(Repository.OBJECT_DIR, filename);
-        if (!file.isDirectory()) {
-            if (!file.delete()) {
-                throw new java.lang.Error("Cannot delete blob");
-            }
-        }
     }
 }

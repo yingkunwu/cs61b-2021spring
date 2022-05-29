@@ -97,12 +97,6 @@ public class Repository {
 
         // Store it in staging area
         Utils.writeObject(TREE_DIR, stage);
-        for (Map.Entry<String, String> entry : stage.getAddition().entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-            System.out.println(key);
-            System.out.println(value);
-        }
     }
 
     public static void commit(String message) {
@@ -141,5 +135,23 @@ public class Repository {
 
         // Create new commit
         doCommit(message, HEAD, currentAddition);
+
+        // Clean Stage file
+        Utils.deleteFile(TREE_DIR);
+    }
+
+    public static void log() {
+        // Retrieve previous commit
+        String HEAD = Utils.readContentsAsString(HEAD_DIR);
+
+        while (HEAD.length() > 0) {
+            Commit previousCommit = Utils.readObject(join(OBJECT_DIR, HEAD), Commit.class);
+            String UID = previousCommit.Hash();
+            String date = previousCommit.getTimestamp();
+            String message = previousCommit.getMessage();
+            HEAD = previousCommit.getParent();
+
+            System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", UID, date, message);
+        }
     }
 }

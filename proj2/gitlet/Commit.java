@@ -39,6 +39,18 @@ public class Commit implements Serializable {
         }
     }
 
+    public String getMessage() {
+        return this.message;
+    }
+
+    public String getParent() {
+        return this.parent;
+    }
+
+    public String getTimestamp() {
+        return this.timestamp;
+    }
+
     public TreeMap<String, String> getTree() {
         return this.tree;
     }

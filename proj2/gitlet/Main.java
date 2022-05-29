@@ -49,6 +49,9 @@ public class Main {
                 }
                 Repository.commit(message);
                 break;
+            case "log":
+                Repository.log();
+                break;
             default :
                 System.out.println("No command with that name exists.");
                 System.exit(0);
