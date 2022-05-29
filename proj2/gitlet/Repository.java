@@ -191,7 +191,7 @@ public class Repository {
             String message = previousCommit.getMessage();
             HEAD = previousCommit.getParent();
 
-            System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", UID, date, message);
+            System.out.printf("===\n\ncommit %s\nDate: %s\n%s\n", UID, date, message);
         }
     }
 }
