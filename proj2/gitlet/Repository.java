@@ -52,7 +52,8 @@ public class Repository {
                 throw new java.lang.Error("Cannot create object directory");
             }
         } else {
-            throw new java.lang.Error("A Gitlet version-control system already exists in the current directory.");
+            System.out.println("A Gitlet version-control system already exists in the current directory.");
+            System.exit(0);
         }
 
         doCommit("initial commit", "", new TreeMap<>());
@@ -61,6 +62,10 @@ public class Repository {
     public static void add(String filename) {
         // Generate glob and store it no matter what
         File file = join(Repository.CWD, filename);
+        if (!file.exists()) {
+            System.out.println("File does not exist.");
+            System.exit(0);
+        }
         Blob blob = new Blob(file);
         String blobUID = blob.Hash();
         Utils.writeObject(join(Repository.OBJECT_DIR, blobUID), blob);
