@@ -30,24 +30,25 @@ public class Main {
                 Repository.init();
                 break;
             case "add":
-                String filename = null;
-                try {
-                    filename = args[1];
-                } catch (java.lang.ArrayIndexOutOfBoundsException exception) {
-                    System.out.println("Please enter a command.");
+                if (args.length < 2) {
+                    System.out.println("Please enter a filename.");
                     System.exit(0);
                 }
-                Repository.add(filename);
+                Repository.add(args[1]);
                 break;
             case "commit":
-                String message = null;
-                try {
-                    message = args[1];
-                } catch (java.lang.ArrayIndexOutOfBoundsException exception) {
+                if (args.length < 2) {
                     System.out.println("Please enter a commit message.");
                     System.exit(0);
                 }
-                Repository.commit(message);
+                Repository.commit(args[1]);
+                break;
+            case "rm":
+                if (args.length < 2) {
+                    System.out.println("Please enter a filename.");
+                    System.exit(0);
+                }
+                Repository.rm(args[1]);
                 break;
             case "log":
                 Repository.log();

@@ -61,7 +61,7 @@ public class Repository {
 
     public static void add(String filename) {
         // Generate glob and store it no matter what
-        File file = join(Repository.CWD, filename);
+        File file = join(CWD, filename);
         if (!file.exists()) {
             System.out.println("File does not exist.");
             System.exit(0);
@@ -91,7 +91,7 @@ public class Repository {
             if (Objects.equals(filename, previousFilename) &&
                     Objects.equals(stage.getAddition().get(filename), previousBlobUID)) {
                 stage.removeAddition(previousFilename);
-                return;
+                break;
             }
         }
 
@@ -138,6 +138,46 @@ public class Repository {
 
         // Clean Stage file
         Utils.deleteFile(TREE_DIR);
+    }
+
+    public static void rm(String filename) {
+        File file = join(CWD, filename);
+        if (!file.exists()) {
+            System.out.println("File does not exist.");
+            System.exit(0);
+        }
+
+        // Delete the file
+        Utils.deleteFile(file);
+
+        // Add filename into removal
+        Stage stage = null;
+        if (TREE_DIR.exists()) {
+            stage = Utils.readObject(TREE_DIR, Stage.class);
+            if (stage.exist(filename)) {
+                stage.removeAddition(filename);
+            } else {
+                // Retrieve previous commit
+                String HEAD = Utils.readContentsAsString(HEAD_DIR);
+                Commit previousCommit = Utils.readObject(join(OBJECT_DIR, HEAD), Commit.class);
+
+                // Compare with contents in previous commit
+                for (Map.Entry<String, String> entry : previousCommit.getTree().entrySet()) {
+                    String previousFilename = entry.getKey();
+                    String previousBlobUID = entry.getValue();
+
+                    if (Objects.equals(filename, previousFilename) &&
+                            Objects.equals(stage.getAddition().get(filename), previousBlobUID)) {
+                        stage.addRemoval(filename);
+                        break;
+                    }
+                }
+            }
+            // Store it in staging area
+            Utils.writeObject(TREE_DIR, stage);
+        } else {
+            System.out.println("No reason to remove the file.");
+        }
     }
 
     public static void log() {
