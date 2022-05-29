@@ -183,15 +183,56 @@ public class Repository {
     public static void log() {
         // Retrieve previous commit
         String HEAD = Utils.readContentsAsString(HEAD_DIR);
+        Commit commit;
+        String date;
+        String message;
 
         while (HEAD.length() > 0) {
-            Commit previousCommit = Utils.readObject(join(OBJECT_DIR, HEAD), Commit.class);
-            String UID = previousCommit.Hash();
-            String date = previousCommit.getTimestamp();
-            String message = previousCommit.getMessage();
-            HEAD = previousCommit.getParent();
+            commit = Utils.readObject(join(OBJECT_DIR, HEAD), Commit.class);
+            date = commit.getTimestamp();
+            message = commit.getMessage();
+            HEAD = commit.getParent();
 
-            System.out.printf("===\n\ncommit %s\nDate: %s\n%s\n", UID, date, message);
+            System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", HEAD, date, message);
+        }
+    }
+
+    public static void globalLog() {
+        List<String> fileList = Utils.plainFilenamesIn(OBJECT_DIR);
+        Commit commit;
+        String date;
+        String message;
+        for (String file : fileList) {
+            try {
+                commit = Utils.readObject(join(OBJECT_DIR, file), Commit.class);
+                date = commit.getTimestamp();
+                message = commit.getMessage();
+
+                System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", file, date, message);
+            } catch (Exception ignored) {}
+        }
+    }
+
+    public static void find(String messageToFind) {
+        List<String> fileList = Utils.plainFilenamesIn(OBJECT_DIR);
+        Commit commit;
+        String message;
+
+        boolean flag = false;
+        for (String file : fileList) {
+            try {
+                commit = Utils.readObject(join(OBJECT_DIR, file), Commit.class);
+                message = commit.getMessage();
+
+                if (message.contains(messageToFind)) {
+                    System.out.println(file);
+                    flag = true;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        if (!flag) {
+            System.out.println("Found no commit with that message.");
         }
     }
 }
