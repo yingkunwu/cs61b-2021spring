@@ -57,6 +57,7 @@ public class Main {
                 }
                 Repository.find(args[1]);
             }
+            case "status" -> Repository.status();
             default -> {
                 System.out.println("No command with that name exists.");
                 System.exit(0);

@@ -3,16 +3,22 @@ package gitlet;
 import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.TreeMap;
 
 import static gitlet.Utils.join;
 
 public class Stage implements Serializable {
 
-    private final TreeMap<String, String> addition;
-    private final ArrayList<String> removal;
+    private TreeMap<String, String> addition;
+    private ArrayList<String> removal;
 
     public Stage() {
+        addition = new TreeMap<>();
+        removal = new ArrayList<>();
+    }
+
+    public void initialize() {
         addition = new TreeMap<>();
         removal = new ArrayList<>();
     }
