@@ -189,9 +189,9 @@ public class Repository {
             commit = readObject(join(OBJECT_DIR, HEAD), Commit.class);
             date = commit.getTimestamp();
             message = commit.getMessage();
-            HEAD = commit.getParent();
 
             System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", HEAD, date, message);
+            HEAD = commit.getParent();
         }
     }
 
