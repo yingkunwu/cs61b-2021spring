@@ -326,7 +326,5 @@ public class Repository {
             }
         }
         System.out.println();
-        System.out.println(currentAddition);
-        System.out.println(currentRemoval);
     }
 }

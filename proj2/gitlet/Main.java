@@ -58,6 +58,18 @@ public class Main {
                 Repository.find(args[1]);
             }
             case "status" -> Repository.status();
+            case "checkout" -> {
+                if (args.length == 3) {
+                    Repo.checkout(args[2], null, null);
+                } else if (args.length == 4) {
+                    Repo.checkout(args[3], args[1], null);
+                } else if (args.length == 2) {
+                    Repo.checkout(null, null, args[1]);
+                } else {
+                    System.out.println("Please enter a correct command.");
+                    System.exit(0);
+                }
+            }
             default -> {
                 System.out.println("No command with that name exists.");
                 System.exit(0);
