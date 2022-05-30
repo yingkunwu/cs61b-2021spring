@@ -3,6 +3,11 @@ package gitlet;
 // TODO: any imports you need here
 
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 /** Represents a gitlet commit object.
@@ -32,10 +37,12 @@ public class Commit implements Serializable {
         this.parent = parent;
         this.tree = tree;
 
+        SimpleDateFormat formatter = new SimpleDateFormat("E MMM dd yyyy HH:mm:ss");
+
         if (this.parent.length() == 0) {
-            this.timestamp = new Date(0).toString();
+            this.timestamp = formatter.format(new Date(0)) + " +0800";
         } else {
-            this.timestamp = new Date().toString();
+            this.timestamp = formatter.format(new Date()) + " +0800";
         }
     }
 
