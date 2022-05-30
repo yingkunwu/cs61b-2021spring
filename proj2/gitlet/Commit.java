@@ -37,7 +37,7 @@ public class Commit implements Serializable {
         this.parent = parent;
         this.tree = tree;
 
-        SimpleDateFormat formatter = new SimpleDateFormat("E MMM dd yyyy HH:mm:ss");
+        SimpleDateFormat formatter = new SimpleDateFormat("E MMM dd HH:mm:ss yyyy");
 
         if (this.parent.length() == 0) {
             this.timestamp = formatter.format(new Date(0)) + " +0800";
