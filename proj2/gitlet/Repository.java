@@ -55,25 +55,24 @@ public class Repository {
         writeContents(join(BRANCH_DIR, currentBranch), UID);
     }
 
+    public static boolean isInitialized() {
+        return GITLET_DIR.exists();
+    }
+
     public static void init() {
-        if (!GITLET_DIR.exists()) {
-            if (!GITLET_DIR.mkdir()) {
-                throw new java.lang.Error("Cannot create gitlet directory");
-            }
-            if (!OBJECT_DIR.mkdir()) {
-                throw new java.lang.Error("Cannot create object directory");
-            }
-            if (!BRANCH_DIR.mkdir()) {
-                throw new java.lang.Error("Cannot create branch directory");
-            }
-            writeContents(HEAD_DIR, "master");
-            Stage stage = new Stage();
-            writeObject(TREE_DIR, stage);
-        } else {
-            System.out.println("A Gitlet version-control system already exists in the current directory.");
-            System.exit(0);
+        if (!GITLET_DIR.mkdir()) {
+            throw new java.lang.Error("Cannot create gitlet directory");
+        }
+        if (!OBJECT_DIR.mkdir()) {
+            throw new java.lang.Error("Cannot create object directory");
+        }
+        if (!BRANCH_DIR.mkdir()) {
+            throw new java.lang.Error("Cannot create branch directory");
         }
 
+        writeContents(HEAD_DIR, "master");
+        Stage stage = new Stage();
+        writeObject(TREE_DIR, stage);
         doCommit("initial commit", "", new TreeMap<>());
     }
 
@@ -142,10 +141,6 @@ public class Repository {
 
     public static void rm(String filename) {
         File file = join(CWD, filename);
-        if (!file.exists()) {
-            System.out.println("File does not exist.");
-            System.exit(0);
-        }
 
         // Retrieve the latest commit tree and the stage status
         Stage stage = readObject(TREE_DIR, Stage.class);

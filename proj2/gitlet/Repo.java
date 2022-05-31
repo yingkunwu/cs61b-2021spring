@@ -48,7 +48,7 @@ public class Repo extends Repository {
                 System.out.println("No such branch exists.");
                 System.exit(0);
             }
-            String currentBranch = readContentsAsString(join(BRANCH_DIR, "current"));
+            String currentBranch = readContentsAsString(HEAD_DIR);
             if (Objects.equals(branch, currentBranch)) {
                 System.out.println("No need to checkout the current branch.");
                 System.exit(0);
