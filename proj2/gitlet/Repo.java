@@ -26,10 +26,9 @@ public class Repo extends Repository {
         String HEAD = getHeadCommitID();
         TreeMap<String, String> latestCommitTree = getCommitTreeWithCommitID(HEAD);
         Stage stage = readObject(TREE_DIR, Stage.class);
-        TreeMap<String, String> additionTree = stage.getAddition();
         for (String file : filesSet) {
             if (filesToBeIgnored.contains(file)) continue;
-            if (!latestCommitTree.containsKey(file) && !additionTree.containsKey(file)) {
+            if (!latestCommitTree.containsKey(file)) {
                 System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
                 System.exit(0);
             }
