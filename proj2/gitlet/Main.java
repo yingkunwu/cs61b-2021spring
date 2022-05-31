@@ -38,6 +38,9 @@ public class Main {
                 if (args.length < 2) {
                     System.out.println("Please enter a commit message.");
                     System.exit(0);
+                } else if (args.length > 2) {
+                    System.out.println("Please quote your message.");
+                    System.exit(0);
                 }
                 Repository.commit(args[1]);
             }
