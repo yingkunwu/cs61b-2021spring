@@ -98,6 +98,10 @@ public class Repository {
     }
 
     public static void commit(String message) {
+        if (message.length() == 0) {
+            System.out.println("Please enter a commit message.");
+            System.exit(0);
+        }
         Stage stage = readObject(TREE_DIR, Stage.class);
         if (stage.empty()) {
             System.out.println("No changes added to the commit.");
