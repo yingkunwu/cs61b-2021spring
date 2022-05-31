@@ -8,15 +8,14 @@ import static gitlet.Utils.*;
 public class Repo extends Repository {
 
     public static void replaceFileWithCommitID(String commitID, String filename) {
-        Commit commit = readObject(join(OBJECT_DIR, commitID), Commit.class);
-        TreeMap<String, String> tree = commit.getTree();
+        TreeMap<String, String> tree = getCommitTreeWithCommitID(commitID);
         if (!tree.containsKey(filename)) {
             System.out.println("File does not exist in that commit.");
             System.exit(0);
         }
         String blobUID = tree.get(filename);
         Blob blob = readObject(join(OBJECT_DIR, blobUID), Blob.class);
-        writeObject(join(CWD, filename), blob.getContent());
+        writeContents(join(CWD, filename), blob.getContent());
     }
 
     public static void checkout(String filename, String commitID, String branch) {
@@ -58,14 +57,13 @@ public class Repo extends Repository {
             Set<String> filesSet = new HashSet<>(files);
 
             // Find if there is any untracked file
-            String HEAD = readContentsAsString(HEAD_DIR);
-            Commit commit = readObject(join(OBJECT_DIR, HEAD), Commit.class);
-            TreeMap<String, String> currentTree = commit.getTree();
-            Stage currentStage = readObject(TREE_DIR, Stage.class);
-            TreeMap<String, String> currentAddition = currentStage.getAddition();
+            String HEAD = getHeadCommitID();
+            TreeMap<String, String> latestCommitTree = getCommitTreeWithCommitID(HEAD);
+            Stage stage = readObject(TREE_DIR, Stage.class);
+            TreeMap<String, String> additionTree = stage.getAddition();
             for (String file : filesSet) {
                 if (filesToBeIgnored.contains(file)) continue;
-                if (!currentTree.containsKey(file) && !currentAddition.containsKey(file)) {
+                if (!latestCommitTree.containsKey(file) && !additionTree.containsKey(file)) {
                     System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
                     System.exit(0);
                 }
@@ -73,8 +71,7 @@ public class Repo extends Repository {
 
             // Retrieve the latest commit of the specified branch
             String branchCommitID = readContentsAsString(branchPath);
-            commit = readObject(join(OBJECT_DIR, branchCommitID), Commit.class);
-            TreeMap<String, String> tree = commit.getTree();
+            TreeMap<String, String> tree = getCommitTreeWithCommitID(branchCommitID);
 
             // Delete files that are not exist in the checked-out branch
             for (String file : filesSet) {
@@ -92,15 +89,18 @@ public class Repo extends Repository {
                 writeObject(join(CWD, branchFilename), blob.getContent());
             }
 
+            // Update the current branch (point head to the checked-out branch)
+            writeContents(HEAD_DIR, branch);
+
             // Store the stage status
-            currentStage.initialize();
-            writeObject(TREE_DIR, currentStage);
+            stage.initialize();
+            writeObject(TREE_DIR, stage);
 
         } else {
             // TODO: Takes the version of the file as it exists in the head commit and puts it in the working
             //  directory, overwriting the version of the file that’s already there if there is one. The new
             //  version of the file is not staged.
-            String HEAD = readContentsAsString(HEAD_DIR);
+            String HEAD = getHeadCommitID();
             replaceFileWithCommitID(HEAD, filename);
         }
     }

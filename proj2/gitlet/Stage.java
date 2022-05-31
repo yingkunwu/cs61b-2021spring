@@ -10,8 +10,8 @@ import static gitlet.Utils.join;
 
 public class Stage implements Serializable {
 
-    private TreeMap<String, String> addition;
-    private ArrayList<String> removal;
+    private final TreeMap<String, String> addition;
+    private final ArrayList<String> removal;
 
     public Stage() {
         addition = new TreeMap<>();
@@ -19,8 +19,8 @@ public class Stage implements Serializable {
     }
 
     public void initialize() {
-        addition = new TreeMap<>();
-        removal = new ArrayList<>();
+        addition.clear();
+        removal.clear();
     }
 
     public TreeMap<String, String> getAddition() {
@@ -31,31 +31,24 @@ public class Stage implements Serializable {
         return this.removal;
     }
 
+    public boolean exist(String filename) {
+        return addition.containsKey(filename);
+    }
+
+    public boolean empty() {
+        return addition.isEmpty() && removal.isEmpty();
+    }
+
     public void addAddition(String filename, String blobUID) {
-        // if blob with same filename exists, delete it
-        if (exist(filename)) {
-            String UID = addition.get(filename);
-            Utils.deleteFile(join(Repository.OBJECT_DIR, UID));
-        }
         addition.put(filename, blobUID);
     }
 
-    public void addRemoval(String filename) {
-        addition.remove(filename);
-        removal.add(filename);
-    }
-
     public void removeAddition(String filename) {
-        if (!exist(filename)) {
-            System.out.println("Unable to remove");
-            System.exit(0);
-        }
-        String UID = addition.get(filename);
-        Utils.deleteFile(join(Repository.OBJECT_DIR, UID));
         addition.remove(filename);
     }
 
-    public boolean exist(String filename) {
-        return addition.containsKey(filename);
+    public void addRemoval(String filename) {
+        removeAddition(filename);
+        removal.add(filename);
     }
 }

@@ -5,6 +5,7 @@ import java.io.File;
 import java.util.*;
 
 import static gitlet.Utils.*;
+import static gitlet.Utils.readContentsAsString;
 
 // TODO: any imports you need here
 
@@ -33,7 +34,16 @@ public class Repository {
     public static final File TREE_DIR = join(GITLET_DIR, "TREE");
     public static final Set<String> filesToBeIgnored = new HashSet<>(Arrays.asList(".DS_Store", "Makefile", "gitlet-design.md", "pom.xml"));
 
-    /* TODO: fill in the rest of this class. */
+    public static String getHeadCommitID() {
+        String currentBranch = readContentsAsString(HEAD_DIR);
+        return readContentsAsString(join(BRANCH_DIR, currentBranch));
+    }
+
+    public static TreeMap<String, String> getCommitTreeWithCommitID(String commitID) {
+        Commit latestCommit = readObject(join(OBJECT_DIR, commitID), Commit.class);
+        return latestCommit.getTree();
+    }
+
     public static void doCommit(String message, String parent, TreeMap<String, String> tree) {
         // Generate commit object
         Commit commit = new Commit(message, parent, tree);
@@ -41,9 +51,10 @@ public class Repository {
         writeObject(join(OBJECT_DIR, UID), commit);
 
         // Update HEAD and Master
-        writeContents(HEAD_DIR, UID);
-        writeContents(join(BRANCH_DIR, readContentsAsString(join(BRANCH_DIR, "current"))), UID);
+        String currentBranch = readContentsAsString(HEAD_DIR);
+        writeContents(join(BRANCH_DIR, currentBranch), UID);
     }
+
     public static void init() {
         if (!GITLET_DIR.exists()) {
             if (!GITLET_DIR.mkdir()) {
@@ -55,7 +66,7 @@ public class Repository {
             if (!BRANCH_DIR.mkdir()) {
                 throw new java.lang.Error("Cannot create branch directory");
             }
-            writeContents(join(BRANCH_DIR, "current"), "master");
+            writeContents(HEAD_DIR, "master");
             Stage stage = new Stage();
             writeObject(TREE_DIR, stage);
         } else {
@@ -78,24 +89,16 @@ public class Repository {
         writeObject(join(Repository.OBJECT_DIR, blobUID), blob);
 
         // Retrieve previous stage status
-        Stage stage;
-        stage = readObject(TREE_DIR, Stage.class);
+        Stage stage = readObject(TREE_DIR, Stage.class);
         stage.addAddition(filename, blobUID);
 
-        // Retrieve previous commit
-        String HEAD = readContentsAsString(HEAD_DIR);
-        Commit previousCommit = readObject(join(OBJECT_DIR, HEAD), Commit.class);
+        // Retrieve the latest commit tree
+        String HEAD = getHeadCommitID();
+        TreeMap<String, String> latestCommitTree = getCommitTreeWithCommitID(HEAD);
 
-        // Compare with contents in previous commit
-        for (Map.Entry<String, String> entry : previousCommit.getTree().entrySet()) {
-            String previousFilename = entry.getKey();
-            String previousBlobUID = entry.getValue();
-
-            if (Objects.equals(filename, previousFilename) &&
-                    Objects.equals(stage.getAddition().get(filename), previousBlobUID)) {
-                stage.removeAddition(previousFilename);
-                break;
-            }
+        // Remove the addition for stage if the status of the file is the same as the tracked status
+        if (Objects.equals(latestCommitTree.get(filename), blobUID)) {
+            stage.removeAddition(filename);
         }
 
         // Store it in staging area
@@ -103,45 +106,38 @@ public class Repository {
     }
 
     public static void commit(String message) {
-        if (!TREE_DIR.exists()) {
+        Stage stage = readObject(TREE_DIR, Stage.class);
+        if (stage.empty()) {
             System.out.println("No changes added to the commit.");
             System.exit(0);
         }
 
-        // Retrieve current stage
-        Stage currentStage = readObject(TREE_DIR, Stage.class);
-        TreeMap<String, String> currentAddition = currentStage.getAddition();
-        ArrayList<String> currentRemoval = currentStage.getRemoval();
+        // Retrieve current addition and removal
+        TreeMap<String, String> additionTree = stage.getAddition();
+        ArrayList<String> removalList = stage.getRemoval();
+        HashSet<String> removalSet = new HashSet<>(removalList);
 
-        // Retrieve previous commit
-        String HEAD = readContentsAsString(HEAD_DIR);
-        Commit previousCommit = readObject(join(OBJECT_DIR, HEAD), Commit.class);
-        TreeMap<String, String> previousTree = previousCommit.getTree();
+        // Retrieve the latest commit tree
+        String HEAD = getHeadCommitID();
+        TreeMap<String, String> latestCommitTree = getCommitTreeWithCommitID(HEAD);
 
         // Update current addition
-        if (previousTree != null) {
-            for (Map.Entry<String, String> entry : previousTree.entrySet()) {
+        if (latestCommitTree != null) {
+            for (Map.Entry<String, String> entry : latestCommitTree.entrySet()) {
                 String filename = entry.getKey();
                 String blobUID = entry.getValue();
-                if (!previousTree.containsKey(filename)) {
-                    currentAddition.put(filename, blobUID);
+
+                // Link the previous tracked status, ignore it if it is updated in current commit
+                if (!additionTree.containsKey(filename) && !removalSet.contains(filename)) {
+                    additionTree.put(filename, blobUID);
                 }
             }
         }
 
-        // Remove element in current addition if there is element in current removal
-        if (currentRemoval != null) {
-            for (String filename : currentRemoval) {
-                currentAddition.remove(filename);
-            }
-        }
-
-        // Create new commit
-        doCommit(message, HEAD, currentAddition);
-
-        // Initialize stage status
-        currentStage.initialize();
-        writeObject(TREE_DIR, currentStage);
+        // Create new commit, initialize stage status, and store the stage status
+        doCommit(message, HEAD, additionTree);
+        stage.initialize();
+        writeObject(TREE_DIR, stage);
     }
 
     public static void rm(String filename) {
@@ -151,44 +147,35 @@ public class Repository {
             System.exit(0);
         }
 
-        // Add filename into removal
-        Stage stage = null;
-        if (TREE_DIR.exists()) {
-            stage = readObject(TREE_DIR, Stage.class);
-            if (stage.exist(filename)) {
-                // TODO: Unstage the file if it is currently staged for addition.
-                stage.removeAddition(filename);
-            } else {
-                // Retrieve previous commit
-                String HEAD = readContentsAsString(HEAD_DIR);
-                Commit previousCommit = readObject(join(OBJECT_DIR, HEAD), Commit.class);
-                TreeMap<String, String> previousTree = previousCommit.getTree();
+        // Retrieve the latest commit tree and the stage status
+        Stage stage = readObject(TREE_DIR, Stage.class);
+        String HEAD = getHeadCommitID();
+        TreeMap<String, String> latestCommitTree = getCommitTreeWithCommitID(HEAD);
 
-                // TODO: If the file is tracked in the current commit, stage it for removal and remove the file from
-                //  the working directory if the user has not already done so
-                if (previousTree.containsKey(filename)) {
-                    stage.addRemoval(filename);
-                    deleteFile(file);
-                }
-            }
-            // Store the stage status
-            writeObject(TREE_DIR, stage);
+        if (latestCommitTree.containsKey(filename)) {
+            // TODO: If the file is tracked in the current commit, stage it for removal and remove the file from
+            //  the working directory if the user has not already done so
+            stage.addRemoval(filename);
+            deleteFile(file);
+        } else if (stage.exist(filename)) {
+            // TODO: Unstage the file if it is currently staged for addition.
+            stage.removeAddition(filename);
         } else {
             System.out.println("No reason to remove the file.");
+            System.exit(0);
         }
+
+        // Store the stage status
+        writeObject(TREE_DIR, stage);
     }
 
     public static void log() {
         // Retrieve previous commit
-        String HEAD = readContentsAsString(HEAD_DIR);
-        Commit commit;
-        String date;
-        String message;
-
+        String HEAD = getHeadCommitID();
         while (HEAD.length() > 0) {
-            commit = readObject(join(OBJECT_DIR, HEAD), Commit.class);
-            date = commit.getTimestamp();
-            message = commit.getMessage();
+            Commit commit = readObject(join(OBJECT_DIR, HEAD), Commit.class);
+            String date = commit.getTimestamp();
+            String message = commit.getMessage();
 
             System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", HEAD, date, message);
             HEAD = commit.getParent();
@@ -197,14 +184,11 @@ public class Repository {
 
     public static void globalLog() {
         List<String> fileList = plainFilenamesIn(OBJECT_DIR);
-        Commit commit;
-        String date;
-        String message;
         for (String file : fileList) {
             try {
-                commit = readObject(join(OBJECT_DIR, file), Commit.class);
-                date = commit.getTimestamp();
-                message = commit.getMessage();
+                Commit commit = readObject(join(OBJECT_DIR, file), Commit.class);
+                String date = commit.getTimestamp();
+                String message = commit.getMessage();
 
                 System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", file, date, message);
             } catch (Exception ignored) {}
@@ -213,14 +197,11 @@ public class Repository {
 
     public static void find(String messageToFind) {
         List<String> fileList = plainFilenamesIn(OBJECT_DIR);
-        Commit commit;
-        String message;
-
         boolean flag = false;
         for (String file : fileList) {
             try {
-                commit = readObject(join(OBJECT_DIR, file), Commit.class);
-                message = commit.getMessage();
+                Commit commit = readObject(join(OBJECT_DIR, file), Commit.class);
+                String message = commit.getMessage();
 
                 if (message.contains(messageToFind)) {
                     System.out.println(file);
@@ -228,28 +209,26 @@ public class Repository {
                 }
             } catch (Exception ignored) {}
         }
-
         if (!flag) {
             System.out.println("Found no commit with that message.");
+            System.exit(0);
         }
     }
 
     public static void status() {
         // Retrieve branches
         List<String> branches = plainFilenamesIn(BRANCH_DIR); // List is already sorted in plainFilenamesIn
-        String currentBranch = readContentsAsString(join(BRANCH_DIR, "current"));
 
         // Retrieve current stage
-        Stage currentStage = readObject(TREE_DIR, Stage.class);
-        TreeMap<String, String> currentAddition = currentStage.getAddition(); // TreeMap is already sorted
-        ArrayList<String> currentRemoval = currentStage.getRemoval();
-        HashSet<String> currentRemovalSet = new HashSet<>(currentRemoval);
-        Collections.sort(currentRemoval);
+        Stage stage = readObject(TREE_DIR, Stage.class);
+        TreeMap<String, String> additionTree = stage.getAddition(); // TreeMap is already sorted
+        ArrayList<String> removalList = stage.getRemoval();
+        HashSet<String> removalSet = new HashSet<>(removalList);
+        Collections.sort(removalList);
 
-        // Retrieve the latest commit
-        String HEAD = readContentsAsString(HEAD_DIR);
-        Commit currentCommit = readObject(join(OBJECT_DIR, HEAD), Commit.class);
-        TreeMap<String, String> currentTree = currentCommit.getTree();
+        // Retrieve the latest commit tree
+        String HEAD = getHeadCommitID();
+        TreeMap<String, String> latestCommitTree = getCommitTreeWithCommitID(HEAD);
 
         // Retrieve all the file name in the directory
         List<String> files = plainFilenamesIn(CWD);
@@ -258,8 +237,7 @@ public class Repository {
         // List branches
         System.out.println("=== Branches ===");
         for (String branch : branches) {
-            if (Objects.equals(branch, "current")) continue;
-            if (Objects.equals(branch, currentBranch)) {
+            if (Objects.equals(readContentsAsString(join(BRANCH_DIR, branch)), HEAD)) {
                 branch = "*" + branch;
             }
             System.out.println(branch);
@@ -268,60 +246,59 @@ public class Repository {
 
         // List staged files
         System.out.println("=== Staged Files ===");
-        for (Map.Entry<String, String> entry : currentAddition.entrySet()) {
+        for (Map.Entry<String, String> entry : additionTree.entrySet()) {
             System.out.println(entry.getKey());
         }
         System.out.println();
 
         // List removed files
         System.out.println("=== Removed Files ===");
-        for (String filename : currentRemoval) {
+        for (String filename : removalList) {
             System.out.println(filename);
         }
         System.out.println();
 
         // List Modifications Not Staged For Commit
         System.out.println("=== Modifications Not Staged For Commit ===");
-        for (Map.Entry<String, String> entry : currentTree.entrySet()) {
+        for (Map.Entry<String, String> entry : latestCommitTree.entrySet()) {
             String filename = entry.getKey();
             String blobUID = entry.getValue();
             if (filesSet.contains(filename)) {
-                Blob blob = new Blob(join(join(CWD, filename)));
+                Blob blob = new Blob(join(CWD, filename));
                 String fileBlobUID = blob.Hash();
                 if ((!Objects.equals(fileBlobUID, blobUID))) {
-                    if (!currentAddition.containsKey(filename)) {
+                    if (!additionTree.containsKey(filename)) {
                         // TODO: Tracked in the current commit, changed in the working directory, but not staged
-                        System.out.println(filename + " (modified)1");
+                        System.out.println(filename + " (modified)");
                     } else {
                         // TODO: Staged for addition, but with different contents than in the working directory
-                        String stageBlobUID = currentAddition.get(filename);
+                        String stageBlobUID = additionTree.get(filename);
                         if (!Objects.equals(fileBlobUID, stageBlobUID)) {
-                            System.out.println(filename + " (modified)2");
+                            System.out.println(filename + " (modified)");
                         }
                     }
                 }
             } else {
                 // TODO: Not staged for removal, but tracked in the current commit and deleted from the working directory
-                if (!currentRemovalSet.contains(filename)) {
+                if (!removalSet.contains(filename)) {
                     System.out.println(filename + " (deleted)");
                 }
             }
         }
         // TODO: Staged for addition, but deleted in the working directory
-        for (Map.Entry<String, String> entry : currentAddition.entrySet()) {
+        for (Map.Entry<String, String> entry : additionTree.entrySet()) {
             String filename = entry.getKey();
             if (!filesSet.contains(filename)) {
-                System.out.println(filename + " (modified)3");
+                System.out.println(filename + " (modified)");
             }
         }
         System.out.println();
 
-        // List untracked file
         // TODO: files present in the working directory but neither staged for addition nor tracked
         System.out.println("=== Untracked Files ===");
         for (String filename : filesSet) {
             if (filesToBeIgnored.contains(filename)) continue;
-            if (!currentTree.containsKey(filename) && !currentAddition.containsKey(filename)) {
+            if (!latestCommitTree.containsKey(filename) && !additionTree.containsKey(filename)) {
                 System.out.println(filename);
             }
         }

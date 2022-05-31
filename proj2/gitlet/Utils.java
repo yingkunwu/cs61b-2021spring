@@ -237,11 +237,15 @@ class Utils {
         System.out.println();
     }
 
-    public static void deleteFile(File file) {
+    public static boolean deleteFile(File file) {
         if (!file.isDirectory()) {
-            if (!file.delete()) {
-                throw new java.lang.Error("Cannot delete blob");
+            if (file.exists()) {
+                return file.delete();
+            } else {
+                return false;
             }
+        } else {
+            return false;
         }
     }
 }
