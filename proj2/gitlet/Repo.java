@@ -86,7 +86,7 @@ public class Repo extends Repository {
                 String branchFilename = entry.getKey();
                 String branchBlobUID = entry.getValue();
                 Blob blob = readObject(join(OBJECT_DIR, branchBlobUID), Blob.class);
-                writeObject(join(CWD, branchFilename), blob.getContent());
+                writeContents(join(CWD, branchFilename), blob.getContent());
             }
 
             // Update the current branch (point head to the checked-out branch)

@@ -3,7 +3,7 @@ package gitlet;
 import java.util.Objects;
 
 /** Driver class for Gitlet, a subset of the Git version-control system.
- *  @author TODO
+ *  @author Ethan
  */
 public class Main {
 
@@ -12,20 +12,12 @@ public class Main {
      */
     public static void main(String[] args) {
         String firstArg = null;
-
         try {
             firstArg = args[0];
         } catch (java.lang.ArrayIndexOutOfBoundsException exception) {
             System.out.println("Please enter a command.");
             System.exit(0);
         }
-
-        // TODO: If a user inputs a command with the wrong number or format of operands,
-        //  print the message Incorrect operands. and exit.
-
-        // TODO: If a user inputs a command that requires being in an initialized Gitlet working directory
-        //  (i.e., one containing a .gitlet subdirectory), but is not in such a directory,
-        //  print the message Not in an initialized Gitlet directory.
 
         if (Objects.equals(firstArg, "init")) {
             if (Repository.isInitialized()) {
@@ -92,6 +84,20 @@ public class Main {
                         System.out.println("Please enter a correct command.");
                         System.exit(0);
                     }
+                }
+                case "branch" -> {
+                    if (args.length < 2) {
+                        System.out.println("Please enter a branch name.");
+                        System.exit(0);
+                    }
+                    Repository.branch(args[1]);
+                }
+                case "rm-branch" -> {
+                    if (args.length < 2) {
+                        System.out.println("Please enter a branch name.");
+                        System.exit(0);
+                    }
+                    Repository.rmBranch(args[1]);
                 }
                 default -> {
                     System.out.println("No command with that name exists.");

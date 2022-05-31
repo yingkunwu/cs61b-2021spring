@@ -7,32 +7,25 @@ import java.util.*;
 import static gitlet.Utils.*;
 import static gitlet.Utils.readContentsAsString;
 
-// TODO: any imports you need here
-
 /** Represents a gitlet repository.
- *  TODO: It's a good idea to give a description here of what else this Class
- *  does at a high level.
- *
- *  @author TODO
+ *  This class contains most of the command that gitlet features.
+ *  @author Ethan
  */
 public class Repository {
-    /**
-     * TODO: add instance variables here.
-     *
-     * List all instance variables of the Repository class here with a useful
-     * comment above them describing what that variable represents and how that
-     * variable is used. We've provided two examples for you.
-     */
-
     /** The current working directory. */
     public static final File CWD = new File(System.getProperty("user.dir"));
     /** The .gitlet directory. */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
+    /** The object directory, which stores all blobs and commits information. */
     public static final File OBJECT_DIR = join(GITLET_DIR, "object");
+    /** The file which points to the current branch */
     public static final File HEAD_DIR = join(GITLET_DIR, "HEAD");
+    /** The branch directory which contains all branches ID. */
     public static final File BRANCH_DIR = join(GITLET_DIR, "BRANCH");
+    /** The file which store stage information */
     public static final File TREE_DIR = join(GITLET_DIR, "TREE");
-    public static final Set<String> filesToBeIgnored = new HashSet<>(Arrays.asList(".DS_Store", "Makefile", "gitlet-design.md", "pom.xml"));
+    /** Files to be ignored in the current branch */
+    public static final Set<String> filesToBeIgnored = new HashSet<>(Arrays.asList(".DS_Store", "Makefile", "gitlet-design.md", "pom.xml", "test.sh"));
 
     public static String getHeadCommitID() {
         String currentBranch = readContentsAsString(HEAD_DIR);
@@ -222,6 +215,7 @@ public class Repository {
         Collections.sort(removalList);
 
         // Retrieve the latest commit tree
+        String currentBranch = readContentsAsString(HEAD_DIR);
         String HEAD = getHeadCommitID();
         TreeMap<String, String> latestCommitTree = getCommitTreeWithCommitID(HEAD);
 
@@ -232,10 +226,11 @@ public class Repository {
         // List branches
         System.out.println("=== Branches ===");
         for (String branch : branches) {
-            if (Objects.equals(readContentsAsString(join(BRANCH_DIR, branch)), HEAD)) {
-                branch = "*" + branch;
+            if (Objects.equals(branch, currentBranch)) {
+                System.out.println("*" + branch);
+            } else {
+                System.out.println(branch);
             }
-            System.out.println(branch);
         }
         System.out.println();
 
@@ -298,5 +293,29 @@ public class Repository {
             }
         }
         System.out.println();
+    }
+
+    public static void branch(String branchName) {
+        File branchDirectory = join(BRANCH_DIR, branchName);
+        if (branchDirectory.exists()) {
+            System.out.println("A branch with that name already exists.");
+            System.exit(0);
+        }
+        String latestCommitID = getHeadCommitID();
+        writeContents(join(BRANCH_DIR, branchName), latestCommitID);
+    }
+
+    public static void rmBranch(String branchName) {
+        File branchDirectory = join(BRANCH_DIR, branchName);
+        if (!branchDirectory.exists()) {
+            System.out.println("A branch with that name does not exist.");
+            System.exit(0);
+        }
+        String currentBranch = readContentsAsString(HEAD_DIR);
+        if (Objects.equals(branchName, currentBranch)) {
+            System.out.println("Cannot remove the current branch.");
+            System.exit(0);
+        }
+        deleteFile(branchDirectory);
     }
 }
