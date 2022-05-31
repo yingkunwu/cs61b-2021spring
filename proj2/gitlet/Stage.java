@@ -40,6 +40,7 @@ public class Stage implements Serializable {
     }
 
     public void addAddition(String filename, String blobUID) {
+        removeRemoval(filename);
         addition.put(filename, blobUID);
     }
 
@@ -50,5 +51,9 @@ public class Stage implements Serializable {
     public void addRemoval(String filename) {
         removeAddition(filename);
         removal.add(filename);
+    }
+
+    public void removeRemoval(String filename) {
+        removal.remove(filename);
     }
 }
