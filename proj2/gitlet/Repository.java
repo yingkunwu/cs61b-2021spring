@@ -140,14 +140,14 @@ public class Repository {
         String HEAD = getHeadCommitID();
         TreeMap<String, String> latestCommitTree = getCommitTreeWithCommitID(HEAD);
 
-        if (latestCommitTree.containsKey(filename)) {
+        if (stage.exist(filename)) {
+            // TODO: Unstage the file if it is currently staged for addition.
+            stage.removeAddition(filename);
+        } else if (latestCommitTree.containsKey(filename)) {
             // TODO: If the file is tracked in the current commit, stage it for removal and remove the file from
             //  the working directory if the user has not already done so
             stage.addRemoval(filename);
             deleteFile(file);
-        } else if (stage.exist(filename)) {
-            // TODO: Unstage the file if it is currently staged for addition.
-            stage.removeAddition(filename);
         } else {
             System.out.println("No reason to remove the file.");
             System.exit(0);
