@@ -56,6 +56,8 @@ public class Repo extends Repository {
             }
             List<String> files = plainFilenamesIn(CWD);
             Set<String> filesSet = new HashSet<>(files);
+
+            // Find if there is any untracked file
             String HEAD = readContentsAsString(HEAD_DIR);
             Commit commit = readObject(join(OBJECT_DIR, HEAD), Commit.class);
             TreeMap<String, String> currentTree = commit.getTree();
@@ -68,9 +70,31 @@ public class Repo extends Repository {
                     System.exit(0);
                 }
             }
-            // TODO: not finished
-            commit = readObject(join(OBJECT_DIR, branch), Commit.class);
+
+            // Retrieve the latest commit of the specified branch
+            String branchCommitID = readContentsAsString(branchPath);
+            commit = readObject(join(OBJECT_DIR, branchCommitID), Commit.class);
             TreeMap<String, String> tree = commit.getTree();
+
+            // Delete files that are not exist in the checked-out branch
+            for (String file : filesSet) {
+                if (filesToBeIgnored.contains(file)) continue;
+                if (!tree.containsKey(file)) {
+                    deleteFile(join(CWD, file));
+                }
+            }
+
+            // Takes all files in the commit at the head of the given branch, and puts them in the working directory
+            for (Map.Entry<String, String> entry : tree.entrySet()) {
+                String branchFilename = entry.getKey();
+                String branchBlobUID = entry.getValue();
+                Blob blob = readObject(join(OBJECT_DIR, branchBlobUID), Blob.class);
+                writeObject(join(CWD, branchFilename), blob.getContent());
+            }
+
+            // Store the stage status
+            currentStage.initialize();
+            writeObject(TREE_DIR, currentStage);
 
         } else {
             // TODO: Takes the version of the file as it exists in the head commit and puts it in the working
