@@ -99,6 +99,13 @@ public class Main {
                     }
                     Repository.rmBranch(args[1]);
                 }
+                case "reset" -> {
+                    if (args.length < 2) {
+                        System.out.println("Please enter a commit ID.");
+                        System.exit(0);
+                    }
+                    Repo.reset(args[1]);
+                }
                 default -> {
                     System.out.println("No command with that name exists.");
                     System.exit(0);
