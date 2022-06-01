@@ -27,9 +27,7 @@ public class Repo extends Repository {
         for (String file : filesSet) {
             if (filesToBeIgnored.contains(file)) continue;
             Blob blob = new Blob(join(CWD, file));
-            String fileBlobUID = blob.Hash();
-            if ((latestCommitTree.containsKey(file) || checkoutCommitTree.containsKey(file))
-                    && (!Objects.equals(fileBlobUID, latestCommitTree.get(file)))) {
+            if (!latestCommitTree.containsKey(file) && checkoutCommitTree.containsKey(file)) {
                 return true;
             }
         }
