@@ -45,13 +45,15 @@ public class Repo extends Repository {
             System.exit(0);
         }
 
+        String HEAD = getHeadCommitID();
+        TreeMap<String, String> currentCommitTree = getCommitTreeWithCommitID(HEAD);
         TreeMap<String, String> checkoutCommitTree = getCommitTreeWithCommitID(checkoutCommitID);
         Stage stage = readObject(TREE_DIR, Stage.class);
 
         // Delete files that exist in the current branch but not exist in the checked-out branch
         for (String file : filesSet) {
             if (filesToBeIgnored.contains(file)) continue;
-            if (!checkoutCommitTree.containsKey(file) && checkoutCommitTree.containsKey(file)) {
+            if (currentCommitTree.containsKey(file) && !checkoutCommitTree.containsKey(file)) {
                 deleteFile(join(CWD, file));
             }
         }
