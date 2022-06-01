@@ -33,13 +33,13 @@ public class Repository {
     }
 
     public static TreeMap<String, String> getCommitTreeWithCommitID(String commitID) {
-        Commit latestCommit = readObject(join(OBJECT_DIR, commitID), Commit.class);
-        return latestCommit.getTree();
+        Commit commit = readObject(join(OBJECT_DIR, commitID), Commit.class);
+        return commit.getTree();
     }
 
-    public static void doCommit(String message, String parent, TreeMap<String, String> tree) {
+    public static void doCommit(String message, String parent1, String parent2, TreeMap<String, String> tree) {
         // Generate commit object
-        Commit commit = new Commit(message, parent, tree);
+        Commit commit = new Commit(message, parent1, parent2, tree);
         String UID = commit.Hash();
         writeObject(join(OBJECT_DIR, UID), commit);
 
@@ -66,7 +66,7 @@ public class Repository {
         writeContents(HEAD_DIR, "master");
         Stage stage = new Stage();
         writeObject(TREE_DIR, stage);
-        doCommit("initial commit", "", new TreeMap<>());
+        doCommit("initial commit", "", "", new TreeMap<>());
     }
 
     public static void add(String filename) {
@@ -131,7 +131,7 @@ public class Repository {
         }
 
         // Create new commit, initialize stage status, and store the stage status
-        doCommit(message, HEAD, additionTree);
+        doCommit(message, HEAD, "", additionTree);
         stage.initialize();
         writeObject(TREE_DIR, stage);
     }
@@ -161,15 +161,28 @@ public class Repository {
         writeObject(TREE_DIR, stage);
     }
 
+    public static void printCommitInformation(Commit commit, String commitID){
+        String parent1;
+        String parent2;
+        String date = commit.getTimestamp();
+        String message = commit.getMessage();
+
+        if (commit.isMerge()) {
+            parent1 = commit.getParent().substring(0, 7);
+            parent2 = commit.getSecondParent().substring(0, 7);;
+            System.out.printf("===\ncommit %s\nMerge: %s %s\nDate: %s\n%s\n\n", commitID, parent1, parent2, date, message);
+        } else {
+            System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", commitID, date, message);
+        }
+    }
+
     public static void log() {
         // Retrieve previous commit
         String HEAD = getHeadCommitID();
+
         while (HEAD.length() > 0) {
             Commit commit = readObject(join(OBJECT_DIR, HEAD), Commit.class);
-            String date = commit.getTimestamp();
-            String message = commit.getMessage();
-
-            System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", HEAD, date, message);
+            printCommitInformation(commit, HEAD);
             HEAD = commit.getParent();
         }
     }
@@ -179,10 +192,7 @@ public class Repository {
         for (String file : fileList) {
             try {
                 Commit commit = readObject(join(OBJECT_DIR, file), Commit.class);
-                String date = commit.getTimestamp();
-                String message = commit.getMessage();
-
-                System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", file, date, message);
+                printCommitInformation(commit, file);
             } catch (Exception ignored) {}
         }
     }
@@ -283,7 +293,7 @@ public class Repository {
         for (Map.Entry<String, String> entry : additionTree.entrySet()) {
             String filename = entry.getKey();
             if (!filesSet.contains(filename)) {
-                System.out.println(filename + " (modified)");
+                System.out.println(filename + " (deleted)");
             }
         }
         System.out.println();

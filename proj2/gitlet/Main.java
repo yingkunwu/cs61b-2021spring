@@ -106,6 +106,13 @@ public class Main {
                     }
                     Repo.reset(args[1]);
                 }
+                case "merge" -> {
+                    if (args.length < 2) {
+                        System.out.println("Please specify a branch to merge.");
+                        System.exit(0);
+                    }
+                    Repo.merge(args[1]);
+                }
                 default -> {
                     System.out.println("No command with that name exists.");
                     System.exit(0);

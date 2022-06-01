@@ -23,19 +23,21 @@ public class Commit implements Serializable {
 
     /** The message of this Commit. */
     private String message;
-    private String parent;
+    private String parent1;
+    private String parent2;
     private String timestamp;
     private TreeMap<String, String> tree;
 
     /* TODO: fill in the rest of this class. */
-    public Commit(String message, String parent, TreeMap<String, String> tree) {
+    public Commit(String message, String parent1, String parent2, TreeMap<String, String> tree) {
         this.message = message;
-        this.parent = parent;
+        this.parent1 = parent1;
+        this.parent2 = parent2;
         this.tree = tree;
 
         SimpleDateFormat formatter = new SimpleDateFormat("E MMM dd HH:mm:ss yyyy");
 
-        if (this.parent.length() == 0) {
+        if (this.parent1.length() == 0) {
             this.timestamp = formatter.format(new Date(0)) + " +0800";
         } else {
             this.timestamp = formatter.format(new Date()) + " +0800";
@@ -47,7 +49,11 @@ public class Commit implements Serializable {
     }
 
     public String getParent() {
-        return this.parent;
+        return this.parent1;
+    }
+
+    public String getSecondParent() {
+        return this.parent2;
     }
 
     public String getTimestamp() {
@@ -58,10 +64,15 @@ public class Commit implements Serializable {
         return this.tree;
     }
 
+    public boolean isMerge() {
+        return this.parent2.length() > 0;
+    }
+
     public String Hash() {
         List<Object> list = new ArrayList<>();
         list.add(this.message);
-        list.add(this.parent);
+        list.add(this.parent1);
+        list.add(this.parent2);
         list.add(this.timestamp);
 
         for(Map.Entry<String, String> entry : tree.entrySet()) {
