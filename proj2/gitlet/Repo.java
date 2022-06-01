@@ -19,14 +19,14 @@ public class Repo extends Repository {
     }
 
     /** A tracked file is defined as being tracked by the current commit tree and have the exact same content. */
-    public static boolean isUntrackedFileExist(Set<String> filesSet, String checkoutCommitID) {
+    public static boolean untrackedFileExist(Set<String> filesSet, String checkoutCommitID) {
         String HEAD = getHeadCommitID();
         TreeMap<String, String> latestCommitTree = getCommitTreeWithCommitID(HEAD);
         TreeMap<String, String> checkoutCommitTree = getCommitTreeWithCommitID(checkoutCommitID);
 
         for (String file : filesSet) {
             if (filesToBeIgnored.contains(file)) continue;
-            if (!latestCommitTree.containsKey(file)) {
+            if (!latestCommitTree.containsKey(file) && checkoutCommitTree.containsKey(file)) {
                 return true;
             }
         }
@@ -40,7 +40,7 @@ public class Repo extends Repository {
         Set<String> filesSet = new HashSet<>(files);
 
         // Find if there is any untracked file that would be overwritten or deleted by the checkout
-        if (isUntrackedFileExist(filesSet, checkoutCommitID)) {
+        if (untrackedFileExist(filesSet, checkoutCommitID)) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             System.exit(0);
         }
@@ -187,7 +187,7 @@ public class Repo extends Repository {
         String branchCommitID = readContentsAsString(branchPath);
 
         // Find if there is any untracked file that would be overwritten or deleted by the checkout
-        if (isUntrackedFileExist(filesSet, branchCommitID)) {
+        if (untrackedFileExist(filesSet, branchCommitID)) {
             System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
             System.exit(0);
         }
