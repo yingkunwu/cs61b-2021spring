@@ -37,9 +37,9 @@ public class Repository {
         return commit.getTree();
     }
 
-    public static void doCommit(String message, String parent1, String parent2, TreeMap<String, String> tree) {
+    public static void doCommit(String message, ArrayList<String> parent, TreeMap<String, String> tree) {
         // Generate commit object
-        Commit commit = new Commit(message, parent1, parent2, tree);
+        Commit commit = new Commit(message, parent, tree);
         String UID = commit.Hash();
         writeObject(join(OBJECT_DIR, UID), commit);
 
@@ -66,7 +66,7 @@ public class Repository {
         writeContents(HEAD_DIR, "master");
         Stage stage = new Stage();
         writeObject(TREE_DIR, stage);
-        doCommit("initial commit", "", "", new TreeMap<>());
+        doCommit("initial commit", new ArrayList<>(Arrays.asList("", "")), new TreeMap<>());
     }
 
     public static void add(String filename) {
@@ -131,7 +131,7 @@ public class Repository {
         }
 
         // Create new commit, initialize stage status, and store the stage status
-        doCommit(message, HEAD, "", additionTree);
+        doCommit(message, new ArrayList<>(List.of(HEAD)), additionTree);
         stage.initialize();
         writeObject(TREE_DIR, stage);
     }
@@ -162,14 +162,13 @@ public class Repository {
     }
 
     public static void printCommitInformation(Commit commit, String commitID){
-        String parent1;
-        String parent2;
         String date = commit.getTimestamp();
         String message = commit.getMessage();
 
         if (commit.isMerge()) {
-            parent1 = commit.getParent().substring(0, 7);
-            parent2 = commit.getSecondParent().substring(0, 7);;
+            ArrayList<String> parent = commit.getParent();
+            String parent1 = parent.get(0).substring(0, 7);
+            String parent2 = parent.get(1).substring(0, 7);
             System.out.printf("===\ncommit %s\nMerge: %s %s\nDate: %s\n%s\n\n", commitID, parent1, parent2, date, message);
         } else {
             System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", commitID, date, message);
@@ -183,7 +182,7 @@ public class Repository {
         while (HEAD.length() > 0) {
             Commit commit = readObject(join(OBJECT_DIR, HEAD), Commit.class);
             printCommitInformation(commit, HEAD);
-            HEAD = commit.getParent();
+            HEAD = commit.getParent().get(0);
         }
     }
 

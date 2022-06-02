@@ -1,15 +1,12 @@
 package gitlet;
 
-// TODO: any imports you need here
-
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 /** Represents a gitlet commit object.
- *  TODO: It's a good idea to give a description here of what else this Class
- *  does at a high level.
- *
+ *  This object store all the information in Commit.
+ *  The tree structure serve as the snapshot of the current tracked file when commit.
  *  @author Ethan
  */
 public class Commit implements Serializable {
@@ -23,21 +20,19 @@ public class Commit implements Serializable {
 
     /** The message of this Commit. */
     private String message;
-    private String parent1;
-    private String parent2;
+    private ArrayList<String> parent;
     private String timestamp;
     private TreeMap<String, String> tree;
 
     /* TODO: fill in the rest of this class. */
-    public Commit(String message, String parent1, String parent2, TreeMap<String, String> tree) {
+    public Commit(String message, ArrayList<String> parent, TreeMap<String, String> tree) {
         this.message = message;
-        this.parent1 = parent1;
-        this.parent2 = parent2;
+        this.parent = parent;
         this.tree = tree;
 
         SimpleDateFormat formatter = new SimpleDateFormat("E MMM dd HH:mm:ss yyyy");
 
-        if (this.parent1.length() == 0) {
+        if (this.parent.get(0).length() == 0) {
             this.timestamp = formatter.format(new Date(0)) + " +0800";
         } else {
             this.timestamp = formatter.format(new Date()) + " +0800";
@@ -48,34 +43,29 @@ public class Commit implements Serializable {
         return this.message;
     }
 
-    public String getParent() {
-        return this.parent1;
-    }
-
-    public String getSecondParent() {
-        return this.parent2;
+    public ArrayList<String> getParent() {
+        return parent;
     }
 
     public String getTimestamp() {
-        return this.timestamp;
+        return timestamp;
     }
 
     public TreeMap<String, String> getTree() {
-        return this.tree;
+        return tree;
     }
 
     public boolean isMerge() {
-        return this.parent2.length() > 0;
+        return parent.size() > 1;
     }
 
     public String Hash() {
         List<Object> list = new ArrayList<>();
-        list.add(this.message);
-        list.add(this.parent1);
-        list.add(this.parent2);
-        list.add(this.timestamp);
+        list.add(message);
+        list.add(timestamp);
+        list.addAll(parent);
 
-        for(Map.Entry<String, String> entry : tree.entrySet()) {
+        for (Map.Entry<String, String> entry : tree.entrySet()) {
             String filename = entry.getKey();
             String blobUID = entry.getValue();
             list.add(filename);

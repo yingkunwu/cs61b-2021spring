@@ -1,6 +1,7 @@
 package gitlet;
 
 import java.io.File;
+import java.lang.reflect.Array;
 import java.util.*;
 
 import static gitlet.Utils.*;
@@ -145,20 +146,30 @@ public class Repo extends Repository {
     }
 
     public static String findSplitCommit(String commitID1, String commitID2) {
-        String parent1 = commitID1;
-        String parent2 = commitID2;
+        Queue<String> parent1 = new LinkedList<>(List.of(commitID1));
+        Queue<String> parent2 = new LinkedList<>(List.of(commitID2));
 
-        while (parent1.length() > 0) {
-            while (parent2.length() > 0) {
-                if (Objects.equals(parent1, parent2)) {
-                    return parent1;
-                }
-                Commit branchCommit = readObject(join(OBJECT_DIR, parent2), Commit.class);
-                parent2 = branchCommit.getParent();
+        while (!parent1.isEmpty()) {
+            if (parent1.peek().length() == 0) {
+                parent1.remove();
+                continue;
             }
-            Commit commit = readObject(join(OBJECT_DIR, parent1), Commit.class);
-            parent1 = commit.getParent();
-            parent2 = commitID2;
+            while (!parent2.isEmpty()) {
+                if (parent2.peek().length() == 0) {
+                    parent2.remove();
+                    continue;
+                }
+                if (Objects.equals(parent1.peek(), parent2.peek())) {
+                    return parent1.peek();
+                }
+                Commit branchCommit = readObject(join(OBJECT_DIR, parent2.peek()), Commit.class);
+                parent2.addAll(branchCommit.getParent());
+                parent2.remove();
+            }
+            Commit branchCommit = readObject(join(OBJECT_DIR, parent1.peek()), Commit.class);
+            parent1.addAll(branchCommit.getParent());
+            parent1.remove();
+            parent2 = new LinkedList<>(List.of(commitID2));
         }
         return null;
     }
@@ -322,6 +333,7 @@ public class Repo extends Repository {
         }
 
         String message = "Merged " + branch + " into " + currentBranch + ".";
-        doCommit(message, currentCommitID, branchCommitID, tree);
+        ArrayList<String> parent = new ArrayList<>(Arrays.asList(currentCommitID, branchCommitID));
+        doCommit(message, parent, tree);
     }
 }

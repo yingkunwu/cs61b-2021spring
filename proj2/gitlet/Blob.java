@@ -3,8 +3,6 @@ package gitlet;
 import java.io.File;
 import java.io.Serializable;
 
-import static gitlet.Utils.join;
-
 public class Blob implements Serializable {
     private final String content;
 

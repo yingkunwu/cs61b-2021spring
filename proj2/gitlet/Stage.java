@@ -1,12 +1,8 @@
 package gitlet;
 
-import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.TreeMap;
-
-import static gitlet.Utils.join;
 
 public class Stage implements Serializable {
 
