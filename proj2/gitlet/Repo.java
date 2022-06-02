@@ -187,7 +187,7 @@ public class Repo extends Repository {
             branchContent = branchBlob.getContent();
         }
 
-        String mergeContent = "<<<<<<< HEAD\n" + currentContent + "=======\n" + branchContent + ">>>>>>>";
+        String mergeContent = "<<<<<<< HEAD\n" + currentContent + "=======\n" + branchContent + ">>>>>>>\n";
         Blob blob = new Blob(mergeContent);
         String blobUID = blob.Hash();
         writeObject(join(OBJECT_DIR, blobUID), blob);
