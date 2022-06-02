@@ -321,10 +321,6 @@ public class Repo extends Repository {
             }
         }
 
-        for (Map.Entry<String, String> entry : tree.entrySet()) {
-            System.out.printf("%s -> %s \n", entry.getKey(), entry.getValue());
-        }
-
         String message = "Merged " + branch + " into " + currentBranch + ".";
         doCommit(message, currentCommitID, branchCommitID, tree);
     }
