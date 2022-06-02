@@ -145,11 +145,12 @@ public class Repository {
         TreeMap<String, String> latestCommitTree = getCommitTreeWithCommitID(HEAD);
 
         if (stage.exist(filename)) {
-            // TODO: Unstage the file if it is currently staged for addition.
+            /* Unstage the file if it is currently staged for addition. */
             stage.removeAddition(filename);
         } else if (latestCommitTree.containsKey(filename)) {
-            // TODO: If the file is tracked in the current commit, stage it for removal and remove the file from
-            //  the working directory if the user has not already done so
+            /* If the file is tracked in the current commit, stage it for removal and remove the file from
+            the working directory if the user has not already done so
+             */
             stage.addRemoval(filename);
             deleteFile(file);
         } else {
@@ -271,10 +272,10 @@ public class Repository {
                 String fileBlobUID = blob.Hash();
                 if ((!Objects.equals(fileBlobUID, blobUID))) {
                     if (!additionTree.containsKey(filename)) {
-                        // TODO: Tracked in the current commit, changed in the working directory, but not staged
+                        /* Tracked in the current commit, changed in the working directory, but not staged */
                         System.out.println(filename + " (modified)");
                     } else {
-                        // TODO: Staged for addition, but with different contents than in the working directory
+                        /* Staged for addition, but with different contents than in the working directory */
                         String stageBlobUID = additionTree.get(filename);
                         if (!Objects.equals(fileBlobUID, stageBlobUID)) {
                             System.out.println(filename + " (modified)");
@@ -282,13 +283,13 @@ public class Repository {
                     }
                 }
             } else {
-                // TODO: Not staged for removal, but tracked in the current commit and deleted from the working directory
+                /* Not staged for removal, but tracked in the current commit and deleted from the working directory */
                 if (!removalSet.contains(filename)) {
                     System.out.println(filename + " (deleted)");
                 }
             }
         }
-        // TODO: Staged for addition, but deleted in the working directory
+        /* Staged for addition, but deleted in the working directory */
         for (Map.Entry<String, String> entry : additionTree.entrySet()) {
             String filename = entry.getKey();
             if (!filesSet.contains(filename)) {
@@ -297,7 +298,7 @@ public class Repository {
         }
         System.out.println();
 
-        // TODO: files present in the working directory but neither staged for addition nor tracked
+        /* files present in the working directory but neither staged for addition nor tracked */
         System.out.println("=== Untracked Files ===");
         for (String filename : filesSet) {
             if (filesToBeIgnored.contains(filename)) continue;

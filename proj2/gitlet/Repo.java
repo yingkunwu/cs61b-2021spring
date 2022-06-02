@@ -1,13 +1,12 @@
 package gitlet;
 
 import java.io.File;
-import java.lang.reflect.Array;
 import java.util.*;
 
 import static gitlet.Utils.*;
 
 public class Repo extends Repository {
-
+    /** This function get the file content tracked by the specific commit and add to the current directory. */
     public static void replaceFileWithCommitID(String commitID, String filename) {
         TreeMap<String, String> tree = getCommitTreeWithCommitID(commitID);
         if (!tree.containsKey(filename)) {
@@ -78,9 +77,10 @@ public class Repo extends Repository {
 
     public static void checkout(String filename, String commitID, String branch) {
         if (commitID != null) {
-            // TODO: Takes the version of the file as it exists in the commit with the given id, and puts it in the
-            //  working directory, overwriting the version of the file that’s already there if there is one. The new
-            //  version of the file is not staged.
+            /* Takes the version of the file as it exists in the commit with the given id, and puts it in the
+            working directory, overwriting the version of the file that’s already there if there is one. The new
+            version of the file is not staged.
+             */
             if (commitID.length() > 40) {
                 System.out.println("Commit ID should not be longer than 40 digits");
                 System.exit(0);
@@ -99,11 +99,12 @@ public class Repo extends Repository {
             System.exit(0);
 
         } else if (branch != null) {
-            // TODO: Takes all files in the commit at the head of the given branch, and puts them in the working
-            //  directory, overwriting the versions of the files that are already there if they exist. Also, at the end
-            //  of this command, the given branch will now be considered the current branch (HEAD). Any files that are
-            //  tracked in the current branch but are not present in the checked-out branch are deleted. The staging
-            //  area is cleared, unless the checked-out branch is the current branch.
+            /* Takes all files in the commit at the head of the given branch, and puts them in the working
+            directory, overwriting the versions of the files that are already there if they exist. Also, at the end
+            of this command, the given branch will now be considered the current branch (HEAD). Any files that are
+            tracked in the current branch but are not present in the checked-out branch are deleted. The staging
+            area is cleared, unless the checked-out branch is the current branch.
+             */
             File branchPath = join(BRANCH_DIR, branch);
             if (!branchPath.exists()) {
                 System.out.println("No such branch exists.");
@@ -120,9 +121,10 @@ public class Repo extends Repository {
             checkoutToSpecificCommitID(branchCommitID, branch);
 
         } else {
-            // TODO: Takes the version of the file as it exists in the head commit and puts it in the working
-            //  directory, overwriting the version of the file that’s already there if there is one. The new
-            //  version of the file is not staged.
+            /* Takes the version of the file as it exists in the head commit and puts it in the working
+            directory, overwriting the version of the file that’s already there if there is one. The new
+            version of the file is not staged.
+             */
             String HEAD = getHeadCommitID();
             replaceFileWithCommitID(HEAD, filename);
         }
@@ -145,6 +147,7 @@ public class Repo extends Repository {
         System.exit(0);
     }
 
+    /** Find the closest shared parent from two commits */
     public static String findSplitCommit(String commitID1, String commitID2) {
         Queue<String> parent1 = new LinkedList<>(List.of(commitID1));
         Queue<String> parent2 = new LinkedList<>(List.of(commitID2));
@@ -174,6 +177,7 @@ public class Repo extends Repository {
         return null;
     }
 
+    /** Solve merge conflict files by keeping contents in both files */
     public static String solveMergeConflict(String filename, String currentBlobUID, String branchBlobUID) {
         String currentContent = "";
         String branchContent = "";
@@ -251,35 +255,39 @@ public class Repo extends Repository {
             String currentBlobUID = currentTree.get(filename);
             String branchBlobUID = branchTree.get(filename);
 
-                // modified in other but not head -> other
+            // modified in other but not head -> other
             if (Objects.equals(currentBlobUID, blobUID) && !Objects.equals(branchBlobUID, blobUID)) {
-                // TODO: Any files present at the split point, unmodified in the current branch, and absent in the
-                //  given branch should be removed (and untracked).
+                /* Any files present at the split point, unmodified in the current branch, and absent in the
+                given branch should be removed (and untracked).
+                 */
                 if (branchBlobUID == null) {
                     deleteFile(join(CWD, filename));
                 } else {
-                    // TODO: Any files that have been modified in the given branch since the split point, but not
-                    //  modified in the current branch since the split point should be changed to their versions
-                    //  in the given branch (checked out from the commit at the front of the given branch).
+                    /* Any files that have been modified in the given branch since the split point, but not
+                    modified in the current branch since the split point should be changed to their versions
+                    in the given branch (checked out from the commit at the front of the given branch).
+                     */
                     replaceFileWithCommitID(branchCommitID, filename);
                     tree.put(filename, branchBlobUID);
                 }
                 // modified in head but not other -> head
             } else if (!Objects.equals(currentBlobUID, blobUID) && Objects.equals(branchBlobUID, blobUID)) {
-                // TODO: Any files present at the split point, unmodified in the given branch, and absent in the
-                //  current branch should remain absent.
+                /* Any files present at the split point, unmodified in the given branch, and absent in the
+                current branch should remain absent.
+                 */
                 if (currentBlobUID != null) {
-                    // TODO: Any files that have been modified in the current branch but not in the given branch
-                    //  since the split point should stay as they are.
+                    /* Any files that have been modified in the current branch but not in the given branch
+                    since the split point should stay as they are.
+                     */
                     tree.put(filename, currentBlobUID);
                 }
                 // modified in both
             } else if (!Objects.equals(currentBlobUID, blobUID) && !Objects.equals(branchBlobUID, blobUID)) {
-                    // if the file is not absent in both commit
+                // if the file is not absent in both commit
                 if (!(currentBlobUID == null) || !(branchBlobUID == null)) {
-                        // modified in the same way
+                    // modified in the same way
                     if (Objects.equals(currentBlobUID, branchBlobUID)) {
-                        tree.put(filename, currentBlobUID); // Doesn't matter
+                        tree.put(filename, currentBlobUID);
                     } else {
                         // modified in the different way
                         System.out.println("Encountered a merge conflict.");
@@ -294,8 +302,9 @@ public class Repo extends Repository {
         }
 
         // Conditions when the file is not tracked by split
-        // TODO: Any files that were not present at the split point and are present only
-        //  in the current branch should remain as they are.
+        /* Any files that were not present at the split point and are present only
+        in the current branch should remain as they are.
+         */
         for (Map.Entry<String, String> entry : currentTree.entrySet()) {
             String filename = entry.getKey();
             String blobUID = entry.getValue();
@@ -321,8 +330,9 @@ public class Repo extends Repository {
             }
         }
 
-        // TODO: Any files that were not present at the split point and are present only
-        //  in the given branch should be checked out and staged.
+        /* Any files that were not present at the split point and are present only
+        in the given branch should be checked out and staged.
+         */
         for (Map.Entry<String, String> entry : branchTree.entrySet()) {
             String filename = entry.getKey();
             String blobUID = entry.getValue();
