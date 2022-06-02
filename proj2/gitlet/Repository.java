@@ -66,7 +66,7 @@ public class Repository {
         writeContents(HEAD_DIR, "master");
         Stage stage = new Stage();
         writeObject(TREE_DIR, stage);
-        doCommit("initial commit", new ArrayList<>(Arrays.asList("", "")), new TreeMap<>());
+        doCommit("initial commit", new ArrayList<>(List.of("")), new TreeMap<>());
     }
 
     public static void add(String filename) {
