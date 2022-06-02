@@ -150,7 +150,6 @@ public class Repo extends Repository {
 
         while (parent1.length() > 0) {
             while (parent2.length() > 0) {
-                System.out.println(parent1 + " ||| " + parent2);
                 if (Objects.equals(parent1, parent2)) {
                     return parent1;
                 }
@@ -162,6 +161,28 @@ public class Repo extends Repository {
             parent2 = commitID2;
         }
         return null;
+    }
+
+    public static String solveMergeConflict(String filename, String currentBlobUID, String branchBlobUID) {
+        String currentContent = "";
+        String branchContent = "";
+
+        if (currentBlobUID != null)  {
+            Blob currentBlob = readObject(join(OBJECT_DIR, currentBlobUID), Blob.class);
+            currentContent = currentBlob.getContent();
+        }
+        if (branchBlobUID != null) {
+            Blob branchBlob = readObject(join(OBJECT_DIR, branchBlobUID), Blob.class);
+            branchContent = branchBlob.getContent();
+        }
+
+        String mergeContent = "<<<<<<< HEAD\n" + currentContent + "=======\n" + branchContent + ">>>>>>>";
+        Blob blob = new Blob(mergeContent);
+        String blobUID = blob.Hash();
+        writeObject(join(OBJECT_DIR, blobUID), blob);
+        writeContents(join(CWD, filename), mergeContent);
+
+        return blobUID;
     }
 
     public static void merge(String branch) {
@@ -196,11 +217,11 @@ public class Repo extends Repository {
         String splitCommitID = findSplitCommit(currentCommitID, branchCommitID);
         if (splitCommitID == null) throw new java.lang.Error("Split not found");
 
-        if (splitCommitID.equals(currentCommitID)) {
+        if (splitCommitID.equals(branchCommitID)) {
             System.out.println("Given branch is an ancestor of the current branch.");
             System.exit(0);
         }
-        if (splitCommitID.equals(branchCommitID)) {
+        if (splitCommitID.equals(currentCommitID)) {
             checkoutToSpecificCommitID(branchCommitID, branch);
             System.out.println("Current branch fast-forwarded.");
             return;
@@ -211,6 +232,8 @@ public class Repo extends Repository {
         TreeMap<String, String> splitTree = getCommitTreeWithCommitID(splitCommitID);
 
         TreeMap<String, String> tree = new TreeMap<>();
+
+        // Conditions when the file is tracked by split
         for (Map.Entry<String, String> entry : splitTree.entrySet()) {
             String filename = entry.getKey();
             String blobUID = entry.getValue();
@@ -242,14 +265,15 @@ public class Repo extends Repository {
                 // modified in both
             } else if (!Objects.equals(currentBlobUID, blobUID) && !Objects.equals(branchBlobUID, blobUID)) {
                     // if the file is not absent in both commit
-                if (!((currentBlobUID == null) && (branchBlobUID == null))) {
+                if (!(currentBlobUID == null) || !(branchBlobUID == null)) {
                         // modified in the same way
                     if (Objects.equals(currentBlobUID, branchBlobUID)) {
                         tree.put(filename, currentBlobUID); // Doesn't matter
                     } else {
                         // modified in the different way
-                        // TODO: conflict
                         System.out.println("Encountered a merge conflict.");
+                        String newBlobUID = solveMergeConflict(filename, currentBlobUID, branchBlobUID);
+                        tree.put(filename, newBlobUID);
                     }
                 }
                 // nothing changed
@@ -258,13 +282,31 @@ public class Repo extends Repository {
             }
         }
 
+        // Conditions when the file is not tracked by split
         // TODO: Any files that were not present at the split point and are present only
         //  in the current branch should remain as they are.
         for (Map.Entry<String, String> entry : currentTree.entrySet()) {
             String filename = entry.getKey();
             String blobUID = entry.getValue();
-            if (!splitTree.containsKey(filename) && !branchTree.containsKey(filename)) {
-                tree.put(filename, blobUID);
+            if (!splitTree.containsKey(filename)) {
+                if (branchTree.containsKey(filename)) {
+                    String branchBlobUID = branchTree.get(filename);
+                    if (!Objects.equals(blobUID, branchBlobUID)) {
+                        /* If the file was absent at the split point and has different contents in the
+                        given and current branches, the conflict happens.
+                         */
+                        System.out.println("Encountered a merge conflict.");
+                        String newBlobUID = solveMergeConflict(filename, blobUID, branchBlobUID);
+                        tree.put(filename, newBlobUID);
+                    } else {
+                        /* If the file was absent at the split point and has same contents in the
+                        given and current branches, they remain as they are.
+                         */
+                        tree.put(filename, blobUID);
+                    }
+                } else {
+                    tree.put(filename, blobUID);
+                }
             }
         }
 
@@ -277,6 +319,10 @@ public class Repo extends Repository {
                 replaceFileWithCommitID(branchCommitID, filename);
                 tree.put(filename, blobUID);
             }
+        }
+
+        for (Map.Entry<String, String> entry : tree.entrySet()) {
+            System.out.printf("%s -> %s \n", entry.getKey(), entry.getValue());
         }
 
         String message = "Merged " + branch + " into " + currentBranch + ".";

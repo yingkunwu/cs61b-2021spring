@@ -12,6 +12,10 @@ public class Blob implements Serializable {
         this.content = Utils.readContentsAsString(file);
     }
 
+    public Blob(String content) {
+        this.content = content;
+    }
+
     public String getContent() {
         return this.content;
     }
