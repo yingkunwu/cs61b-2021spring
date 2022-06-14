@@ -23,11 +23,10 @@ public class Repo extends Repository {
         String HEAD = getHeadCommitID();
         TreeMap<String, String> latestCommitTree = getCommitTreeWithCommitID(HEAD);
         TreeMap<String, String> checkoutCommitTree = getCommitTreeWithCommitID(checkoutCommitID);
-        Stage stage = readObject(TREE_DIR, Stage.class);
 
         for (String file : filesSet) {
             if (filesToBeIgnored.contains(file)) continue;
-            if (!latestCommitTree.containsKey(file) && checkoutCommitTree.containsKey(file) || !stage.empty()) {
+            if (!latestCommitTree.containsKey(file) && checkoutCommitTree.containsKey(file)) {
                 return true;
             }
         }
