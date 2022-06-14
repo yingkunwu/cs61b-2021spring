@@ -148,7 +148,7 @@ public class Repo extends Repository {
     }
 
     /** Find the closest shared parent from two commits */
-    public static String findSplitCommit(String commitID1, String commitID2) {
+    /*public static String findSplitCommit(String commitID1, String commitID2) {
         Queue<String> parent1 = new LinkedList<>(List.of(commitID1));
         Queue<String> parent2 = new LinkedList<>(List.of(commitID2));
 
@@ -173,6 +173,37 @@ public class Repo extends Repository {
             parent1.addAll(branchCommit.getParent());
             parent1.remove();
             parent2 = new LinkedList<>(List.of(commitID2));
+        }
+        return null;
+    }*/
+
+    public static LinkedList<String> loadParent(String commitID) {
+        LinkedList<String> allParents = new LinkedList<>();
+        Commit commit = readObject(join(OBJECT_DIR, commitID), Commit.class);
+        ArrayList<String> parents = commit.getParent();
+        for (String p : parents) {
+            allParents.addAll(loadParent(p));
+        }
+        return allParents;
+    }
+
+    public static String findSplitCommit(String commitID1, String commitID2) {
+        LinkedList<String> parents = loadParent(commitID1);
+        Queue<String> parent2 = new LinkedList<>(List.of(commitID2));
+
+        while (!parent2.isEmpty()) {
+            if (parent2.peek().length() == 0) {
+                parent2.remove();
+                continue;
+            }
+            for (String p : parents) {
+                if (Objects.equals(parent2.peek(), p)) {
+                    return p;
+                }
+            }
+            Commit branchCommit = readObject(join(OBJECT_DIR, parent2.peek()), Commit.class);
+            parent2.addAll(branchCommit.getParent());
+            parent2.remove();
         }
         return null;
     }
