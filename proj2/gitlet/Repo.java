@@ -1,6 +1,7 @@
 package gitlet;
 
 import java.io.File;
+import java.lang.reflect.Array;
 import java.util.*;
 
 import static gitlet.Utils.*;
@@ -177,33 +178,62 @@ public class Repo extends Repository {
         return null;
     }*/
 
-    public static LinkedList<String> loadParent(String commitID) {
-        LinkedList<String> allParents = new LinkedList<>();
+    public static void loadParent(String commitID, HashSet<String> allParents) {
+        System.out.println(commitID);
+        if (commitID.length() == 0) {
+            return;
+        }
+        allParents.add(commitID);
         Commit commit = readObject(join(OBJECT_DIR, commitID), Commit.class);
         ArrayList<String> parents = commit.getParent();
         for (String p : parents) {
-            allParents.addAll(loadParent(p));
+            loadParent(p, allParents);
         }
-        return allParents;
     }
 
     public static String findSplitCommit(String commitID1, String commitID2) {
-        LinkedList<String> parents = loadParent(commitID1);
-        Queue<String> parent2 = new LinkedList<>(List.of(commitID2));
+        Queue<String> parent1 = new LinkedList<>(List.of(commitID1));
+        HashSet<String> parent2 = new HashSet<>();
+        loadParent(commitID2, parent2);
+        System.out.println(parent2);
 
-        while (!parent2.isEmpty()) {
-            if (parent2.peek().length() == 0) {
-                parent2.remove();
+        while (!parent1.isEmpty()) {
+            if (parent1.peek().length() == 0) {
+                parent1.remove();
                 continue;
             }
-            for (String p : parents) {
-                if (Objects.equals(parent2.peek(), p)) {
-                    return p;
+            Commit branchCommit = readObject(join(OBJECT_DIR, parent1.peek()), Commit.class);
+            ArrayList<String> parents = branchCommit.getParent();
+            String p1 = parents.get(0);
+            if (parents.size() > 1) {
+                String p2 = parents.get(1);
+                if (parent2.contains(p1) && parent2.contains(p2)) {
+                    Commit branch1Commit = readObject(join(OBJECT_DIR, p1), Commit.class);
+                    Commit branch2Commit = readObject(join(OBJECT_DIR, p2), Commit.class);
+                    HashSet<String> parentsOfParents1 = new HashSet<>(branch1Commit.getParent());
+                    HashSet<String> parentsOfParents2 = new HashSet<>(branch2Commit.getParent());
+                    if (parentsOfParents1.contains(p2)) {
+                        return p1;
+                    }
+                    if (parentsOfParents2.contains(p1)) {
+                        return p2;
+                    }
+                    return null;
+                } else if (parent2.contains(p1)) {
+                    return p1;
+                } else if (parent2.contains(p2)) {
+                    return p2;
+                } else {
+                    parent1.addAll(parents);
+                }
+            } else {
+                if (parent2.contains(p1)) {
+                    return p1;
+                } else {
+                    parent1.add(p1);
                 }
             }
-            Commit branchCommit = readObject(join(OBJECT_DIR, parent2.peek()), Commit.class);
-            parent2.addAll(branchCommit.getParent());
-            parent2.remove();
+            parent1.remove();
         }
         return null;
     }
