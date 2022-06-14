@@ -1,7 +1,6 @@
 package gitlet;
 
 import java.io.File;
-import java.lang.reflect.Array;
 import java.util.*;
 
 import static gitlet.Utils.*;
@@ -24,10 +23,11 @@ public class Repo extends Repository {
         String HEAD = getHeadCommitID();
         TreeMap<String, String> latestCommitTree = getCommitTreeWithCommitID(HEAD);
         TreeMap<String, String> checkoutCommitTree = getCommitTreeWithCommitID(checkoutCommitID);
+        Stage stage = readObject(TREE_DIR, Stage.class);
 
         for (String file : filesSet) {
             if (filesToBeIgnored.contains(file)) continue;
-            if (!latestCommitTree.containsKey(file) && checkoutCommitTree.containsKey(file)) {
+            if (!latestCommitTree.containsKey(file) && checkoutCommitTree.containsKey(file) || !stage.empty()) {
                 return true;
             }
         }
@@ -148,7 +148,6 @@ public class Repo extends Repository {
         System.exit(0);
     }
 
-    /** Find the closest shared parent from two commits */
     /*public static String findSplitCommit(String commitID1, String commitID2) {
         Queue<String> parent1 = new LinkedList<>(List.of(commitID1));
         Queue<String> parent2 = new LinkedList<>(List.of(commitID2));
@@ -190,6 +189,7 @@ public class Repo extends Repository {
         }
     }
 
+    /** Find the closest shared parent from two commits */
     public static String findSplitCommit(String commitID1, String commitID2) {
         Queue<String> parent1 = new LinkedList<>(List.of(commitID1));
         HashSet<String> parent2 = new HashSet<>();
