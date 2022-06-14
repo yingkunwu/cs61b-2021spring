@@ -179,7 +179,6 @@ public class Repo extends Repository {
     }*/
 
     public static void loadParent(String commitID, HashSet<String> allParents) {
-        System.out.println(commitID);
         if (commitID.length() == 0) {
             return;
         }
@@ -195,7 +194,6 @@ public class Repo extends Repository {
         Queue<String> parent1 = new LinkedList<>(List.of(commitID1));
         HashSet<String> parent2 = new HashSet<>();
         loadParent(commitID2, parent2);
-        System.out.println(parent2);
 
         while (!parent1.isEmpty()) {
             if (parent1.peek().length() == 0) {
